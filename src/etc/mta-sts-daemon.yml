@@ -1,0 +1,6 @@
+path: "/run/mta-sts/mta-sts.sock"
+mode: 0660
+cache:
+  type: sqlite
+  options:
+    filename: "/var/lib/mta-sts/cache.db"
