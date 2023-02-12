@@ -12,7 +12,6 @@
 
 set -eu -o pipefail
 export LC_ALL=C
-shopt -u nullglob
 
 [ -v CI_TOOLS ] && [ "$CI_TOOLS" == "SGSGermany" ] \
     || { echo "Invalid build environment: Environment variable 'CI_TOOLS' not set or invalid" >&2; exit 1; }
@@ -86,7 +85,7 @@ cmd buildah config \
 
 cmd buildah config \
     --workingdir "/var/lib/mta-sts" \
-    --user "mta-sts" \
+    --entrypoint '[ "/entrypoint.sh" ]' \
     --cmd '[ "mta-sts-daemon" ]' \
     "$CONTAINER"
 
