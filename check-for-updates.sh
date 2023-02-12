@@ -22,6 +22,7 @@ export LC_ALL=C
 source "$CI_TOOLS_PATH/helper/common.sh.inc"
 source "$CI_TOOLS_PATH/helper/common-traps.sh.inc"
 source "$CI_TOOLS_PATH/helper/chkupd.sh.inc"
+source "$CI_TOOLS_PATH/helper/chkupd-pypi.sh.inc"
 
 BUILD_DIR="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 source "$BUILD_DIR/container.env"
@@ -33,35 +34,4 @@ PYPI_PACKAGES=( "postfix-mta-sts-resolver[sqlite,uvloop]" )
 chkupd_baseimage "$REGISTRY/$OWNER/$IMAGE" "$TAG" || exit 0
 
 # check whether PyPi packages were updated
-chkupd_pypi() {
-    local IMAGE="$1"
-    shift
-
-    echo + "CONTAINER=\"\$(buildah from $(quote "$IMAGE"))\"" >&2
-    local CONTAINER="$(buildah from "$IMAGE" || true)"
-
-    if [ -z "$CONTAINER" ]; then
-        echo "Failed to pull image '$IMAGE': No image with this tag found" >&2
-        echo "Image rebuild required" >&2
-        echo "build"
-        return 1
-    fi
-
-    trap_exit buildah rm "$CONTAINER"
-
-    cmd buildah run --user root "$CONTAINER" -- \
-        apk add --no-cache py3-pip >&2
-
-    echo + "PACKAGE_UPGRADES=\"\$(buildah run --user root $(quote "$CONTAINER") -- pip list --user --outdated)\"" >&2
-    local PACKAGE_UPGRADES="$(buildah run --user root "$CONTAINER" -- pip list --user --outdated)"
-
-    if [ -n "$PACKAGE_UPGRADES" ]; then
-        echo "Image is out of date: PyPi package upgrades are available" >&2
-        echo "$PACKAGE_UPGRADES" >&2
-        echo "Image rebuild required" >&2
-        echo "build"
-        return 1
-    fi
-}
-
 chkupd_pypi "$REGISTRY/$OWNER/$IMAGE:$TAG" "${PYPI_PACKAGES[@]}" || exit 0
